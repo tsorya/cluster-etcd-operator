@@ -46,6 +46,8 @@ const (
 	// namespace which if present indicates the DelayedHAScalingStrategy strategy
 	// should be used.
 	DelayedHABootstrapScalingStrategyAnnotation = "openshift.io/delayed-ha-bootstrap"
+
+	NonHABootstrapScalingStrategyAnnotation = "openshift.io/non-ha-bootstrap"
 )
 
 // GetBootstrapScalingStrategy determines the scaling strategy to use.
@@ -62,14 +64,16 @@ func GetBootstrapScalingStrategy(staticPodClient v1helpers.StaticPodOperatorClie
 		return strategy, fmt.Errorf("couldn't determine etcd unsupported override status, assuming default HA scaling strategy: %w", err)
 	}
 
+
 	etcdNamespace, err := namespaceLister.Get(operatorclient.TargetNamespace)
 	if err != nil {
 		return strategy, fmt.Errorf("failed to get %s namespace: %w", operatorclient.TargetNamespace, err)
 	}
 	_, hasDelayedHAAnnotation := etcdNamespace.Annotations[DelayedHABootstrapScalingStrategyAnnotation]
+	_, hasNonHAAnnotation := etcdNamespace.Annotations[NonHABootstrapScalingStrategyAnnotation]
 
 	switch {
-	case isUnsupportedUnsafeEtcd:
+	case isUnsupportedUnsafeEtcd || hasNonHAAnnotation:
 		strategy = UnsafeScalingStrategy
 	case hasDelayedHAAnnotation:
 		strategy = DelayedHAScalingStrategy

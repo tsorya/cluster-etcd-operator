@@ -286,14 +286,7 @@ func newTemplateData(opts *renderOpts) (*TemplateData, error) {
 		return nil, err
 	}
 
-	// Use a marker file to configure the bootstrap scaling strategy.
-	if _, err := os.Stat(opts.delayedHABootstrapScalingStrategyMarker); err == nil {
-		if templateData.NamespaceAnnotations == nil {
-			templateData.NamespaceAnnotations = map[string]string{}
-		}
-		templateData.NamespaceAnnotations[ceohelpers.DelayedHABootstrapScalingStrategyAnnotation] = ""
-		klog.Infof("using delayed HA bootstrap scaling strategy due to presence of marker file %s", opts.delayedHABootstrapScalingStrategyMarker)
-	}
+	templateData.NamespaceAnnotations = getNamespaceAnnotations(opts, infra)
 
 	return &templateData, nil
 }
@@ -630,4 +623,22 @@ func getInfrastructure(file string) (*configv1.Infrastructure, error) {
 		return nil, err
 	}
 	return config, nil
+}
+
+// If HA mode is None, set usingUnsafeScalingStrategy to scaling strategy.
+// Else if marker file exists set delayed bootstrap scaling strategy.
+func getNamespaceAnnotations(opts *renderOpts,infra *configv1.Infrastructure) map[string]string {
+	annotations := map[string]string{}
+
+	if infra.Status.HighAvailabilityMode == configv1.NoneHighAvailabilityMode {
+		annotations[ceohelpers.NonHABootstrapScalingStrategyAnnotation] = ""
+		klog.Infof("usingUnsafeScalingStrategy bootstrap scaling strategy due to None ha mode")
+	} else if _, err := os.Stat(opts.delayedHABootstrapScalingStrategyMarker); err == nil {
+		annotations[ceohelpers.DelayedHABootstrapScalingStrategyAnnotation] = ""
+		klog.Infof("using delayed HA bootstrap scaling strategy due to presence of marker file %s", opts.delayedHABootstrapScalingStrategyMarker)
+	}
+	if len(annotations) < 1 {
+		annotations = nil
+	}
+	return annotations
 }

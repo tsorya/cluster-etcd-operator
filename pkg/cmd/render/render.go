@@ -256,7 +256,7 @@ func newTemplateData(opts *renderOpts) (*TemplateData, error) {
 	}
 
 	templateData.ServiceCIDR = network.Spec.ServiceNetwork
-
+	klog.Infof("AAAAAAAAAAAAAAAAAAAAAAA")
 	if err := templateData.setSingleStackIPv6(templateData.ServiceCIDR); err != nil {
 		return nil, err
 	}
@@ -266,6 +266,7 @@ func newTemplateData(opts *renderOpts) (*TemplateData, error) {
 	if err := templateData.setHostname(); err != nil {
 		return nil, err
 	}
+	klog.Infof("BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
 
 	if templateData.BootstrapIP == "" {
 		excludedIPs, err := getExcludedMachineIPs(installConfig)
@@ -276,18 +277,20 @@ func newTemplateData(opts *renderOpts) (*TemplateData, error) {
 			return nil, err
 		}
 	}
+	klog.Infof("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
 
 	templateData.setEtcdAddress(templateData.SingleStackIPv6, templateData.BootstrapIP)
 
 	// assume that this is >4.2
 	templateData.Platform = string(infra.Status.PlatformStatus.Type)
-
+	klog.Infof("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
 	if err := templateData.setComputedEnvVars(templateData.Platform); err != nil {
 		return nil, err
 	}
 
+	klog.Infof("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
 	templateData.NamespaceAnnotations = getNamespaceAnnotations(opts, infra)
-
+	klog.Infof("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX %v", templateData.NamespaceAnnotations)
 	return &templateData, nil
 }
 
@@ -637,6 +640,10 @@ func getNamespaceAnnotations(opts *renderOpts,infra *configv1.Infrastructure) ma
 		annotations[ceohelpers.DelayedHABootstrapScalingStrategyAnnotation] = ""
 		klog.Infof("using delayed HA bootstrap scaling strategy due to presence of marker file %s", opts.delayedHABootstrapScalingStrategyMarker)
 	}
+
+	annotations[ceohelpers.NonHABootstrapScalingStrategyAnnotation] = ""
+	klog.Infof("usingUnsafeScalingStrategy bootstrap scaling strategy due to None ha mode")
+
 	if len(annotations) < 1 {
 		annotations = nil
 	}
